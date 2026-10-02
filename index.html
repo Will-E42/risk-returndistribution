@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Risk–Return Distribution Visualizer</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: #f5f6f8;
+        color: #222;
+        line-height: 1.5;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 35px 20px 60px;
+    }
+
+    header {
+        margin-bottom: 30px;
+    }
+
+    h1 {
+        margin: 0 0 8px;
+        font-size: 32px;
+        font-weight: 600;
+    }
+
+    .tagline {
+        margin: 0;
+        color: #666;
+        font-size: 16px;
+    }
+
+    h2 {
+        margin: 0 0 20px;
+        font-size: 22px;
+        font-weight: 600;
+    }
+
+    h3 {
+        margin: 0 0 15px;
+        font-size: 17px;
+        font-weight: 600;
+    }
+
+    .section {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 25px;
+        margin-bottom: 25px;
+    }
+
+    /* INPUTS */
+
+    .fund-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+        margin-bottom: 25px;
+    }
+
+    .fund-box {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 20px;
+    }
+
+    .fund-box h3 {
+        margin-bottom: 18px;
+    }
+
+    .input-row {
+        display: grid;
+        grid-template-columns: 130px 1fr;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    label {
+        font-size: 14px;
+        color: #444;
+    }
+
+    input {
+        width: 100%;
+        padding: 10px 11px;
+        border: 1px solid #bbb;
+        border-radius: 5px;
+        font-size: 15px;
+        background: #fff;
+    }
+
+    input:focus {
+        outline: none;
+        border-color: #555;
+    }
+
+    .target-box {
+        border-top: 1px solid #ddd;
+        padding-top: 22px;
+    }
+
+    .target-inputs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        max-width: 500px;
+    }
+
+    .target-note {
+        margin-top: 10px;
+        font-size: 13px;
+        color: #777;
+    }
+
+    .button-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    button {
+        padding: 10px 18px;
+        border: 1px solid #555;
+        border-radius: 5px;
+        background: #222;
+        color: white;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    button.secondary {
+        background: white;
+        color: #333;
+        border-color: #aaa;
+    }
+
+    button:hover {
+        opacity: 0.85;
+    }
+
+    /* VISUALIZER */
+
+    .chart-wrapper {
+        position: relative;
+        width: 100%;
+        height: 480px;
+	background: #fafafa;
+    	border-radius: 6px;
+    }
+
+    canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    .legend {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+        font-size: 14px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .legend-line {
+        width: 28px;
+        height: 3px;
+        display: inline-block;
+    }
+
+    .legend-a {
+        background: #3b82f6;
+    }
+
+    .legend-b {
+        background: #d97706;
+    }
+
+    .target-legend {
+        width: 28px;
+        height: 12px;
+        background: rgba(80, 80, 80, 0.05);
+        border: 1px solid #aaa;
+    }
+
+    .chart-note {
+        text-align: center;
+        color: #777;
+        font-size: 13px;
+        margin-top: 12px;
+    }
+
+    /* TABLES */
+
+    .comparison-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+        padding: 12px 10px;
+        border-bottom: 1px solid #e5e5e5;
+        text-align: right;
+    }
+
+    .comparison-table th:first-child,
+    .comparison-table td:first-child {
+        text-align: left;
+    }
+
+    .comparison-table th {
+        font-weight: 600;
+        background: #f7f7f7;
+    }
+
+    .comparison-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .fund-a-name {
+        font-weight: 600;
+    }
+
+    .fund-b-name {
+        font-weight: 600;
+    }
+
+    /* PROBABILITY CARDS */
+
+    .probability-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+    }
+
+    .probability-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 20px;
+    }
+
+    .probability-card h3 {
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 12px;
+    }
+
+    .prob-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 11px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .prob-row:last-child {
+        border-bottom: none;
+    }
+
+    .prob-label {
+        color: #555;
+    }
+
+    .prob-value {
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .target-title {
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
+
+    .disabled-message {
+        color: #777;
+        text-align: center;
+        padding: 20px 0;
+    }
+
+    /* METHODOLOGY */
+
+    .methodology {
+        color: #555;
+        font-size: 14px;
+    }
+
+    .methodology p {
+        margin: 8px 0;
+    }
+
+    .formula {
+        background: #f7f7f7;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 12px;
+        margin: 12px 0;
+        font-family: "Times New Roman", serif;
+        font-size: 17px;
+        text-align: center;
+    }
+
+    footer {
+        text-align: center;
+        color: #888;
+        font-size: 13px;
+        margin-top: 30px;
+    }
+
+    @media (max-width: 750px) {
+        .fund-grid,
+        .probability-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .target-inputs {
+            grid-template-columns: 1fr;
+        }
+
+        .input-row {
+            grid-template-columns: 110px 1fr;
+        }
+
+        .chart-wrapper {
+            height: 380px;
+        }
+
+        h1 {
+            font-size: 27px;
+        }
+
+        .section {
+            padding: 18px;
+        }
+
+        .comparison-table {
+            font-size: 13px;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 9px 5px;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<header>
+    <h1>Risk–Return Distribution Visualizer</h1>
+    <p class="tagline">
+        Visualize expected return, volatility, and probability across two funds.
+    </p>
+</header>
+
+
+<!-- =========================
+     INPUT SECTION
+========================= -->
+
+<section class="section">
+
+    <h2>Input</h2>
+
+    <div class="fund-grid">
+
+        <div class="fund-box">
+
+            <h3>Fund A</h3>
+
+            <div class="input-row">
+                <label for="fundA">Fund code</label>
+                <input type="text" id="fundA" value="Fund A" oninput="update()">
+            </div>
+
+            <div class="input-row">
+                <label for="meanA">Mean return (%)</label>
+                <input type="number" id="meanA" value="15" step="0.01" oninput="update()">
+            </div>
+
+            <div class="input-row">
+                <label for="sdA">Standard deviation (%)</label>
+                <input type="number" id="sdA" value="15" min="0.0001" step="0.01" oninput="update()">
+            </div>
+
+        </div>
+
+
+        <div class="fund-box">
+
+            <h3>Fund B</h3>
+
+            <div class="input-row">
+                <label for="fundB">Fund code</label>
+                <input type="text" id="fundB" value="Fund B" oninput="update()">
+            </div>
+
+            <div class="input-row">
+                <label for="meanB">Mean return (%)</label>
+                <input type="number" id="meanB" value="20" step="0.01" oninput="update()">
+            </div>
+
+            <div class="input-row">
+                <label for="sdB">Standard deviation (%)</label>
+                <input type="number" id="sdB" value="25" min="0.0001" step="0.01" oninput="update()">
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="target-box">
+
+        <h3>Target return range — Optional</h3>
+
+        <div class="target-inputs">
+
+            <div>
+                <label for="targetLow">Minimum return (%)</label>
+                <input
+                    type="number"
+                    id="targetLow"
+                    value=""
+                    step="0.01"
+                    oninput="update()"
+                >
+            </div>
+
+            <div>
+                <label for="targetHigh">Maximum return (%)</label>
+                <input
+                    type="number"
+                    id="targetHigh"
+                    value=""
+                    step="0.01"
+                    oninput="update()"
+                >
+            </div>
+
+        </div>
+
+        <div class="target-note">
+            Leave both fields empty to disable target probability analysis.
+        </div>
+
+    </div>
+
+
+    <div class="button-row">
+        <button onclick="loadExample()">Load Example</button>
+        <button class="secondary" onclick="clearInputs()">Clear</button>
+    </div>
+
+</section>
+
+
+<!-- =========================
+     VISUALIZER
+========================= -->
+
+<section class="section">
+
+    <h2>Visualizer</h2>
+
+    <div class="chart-wrapper">
+        <canvas id="distributionChart"></canvas>
+    </div>
+
+    <div class="legend">
+
+        <div class="legend-item">
+            <span class="legend-line legend-a"></span>
+            <span id="legendA">Fund A</span>
+        </div>
+
+        <div class="legend-item">
+            <span class="legend-line legend-b"></span>
+            <span id="legendB">Fund B</span>
+        </div>
+
+        <div class="legend-item" id="targetLegend" style="display:none;">
+            <span class="target-legend"></span>
+            <span id="targetLegendText">Target range</span>
+        </div>
+
+    </div>
+
+    <div class="chart-note">
+        Display range: −30% to +50%. The display range does not limit the probability calculations.
+    </div>
+
+</section>
+
+
+<!-- =========================
+     DISTRIBUTION ANALYSIS
+========================= -->
+
+<section class="section">
+
+    <h2>Distribution Analysis</h2>
+
+    <table class="comparison-table">
+
+        <thead>
+            <tr>
+                <th>Metric</th>
+                <th id="tableFundA">Fund A</th>
+                <th id="tableFundB">Fund B</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            <tr>
+                <td>Mean return</td>
+                <td id="outMeanA"></td>
+                <td id="outMeanB"></td>
+            </tr>
+
+            <tr>
+                <td>Standard deviation</td>
+                <td id="outSDA"></td>
+                <td id="outSDB"></td>
+            </tr>
+
+            <tr>
+                <td>1 SD range</td>
+                <td id="out1A"></td>
+                <td id="out1B"></td>
+            </tr>
+
+            <tr>
+                <td>2 SD range</td>
+                <td id="out2A"></td>
+                <td id="out2B"></td>
+            </tr>
+
+        </tbody>
+
+    </table>
+
+</section>
+
+
+<!-- =========================
+     TARGET PROBABILITY
+========================= -->
+
+<section class="section">
+
+    <h2>Target Probability Analysis</h2>
+
+    <div id="probabilityContent">
+
+        <div class="probability-grid">
+
+            <div class="probability-card">
+
+                <h3 id="probFundA">Fund A</h3>
+
+                <div class="target-title" id="targetTitleA">
+                    Target range probability
+                </div>
+
+                <div class="prob-row">
+                    <span class="prob-label">Target range</span>
+                    <span class="prob-value" id="rangeA">—</span>
+                </div>
+
+                <div class="prob-row">
+                    <span class="prob-label">Below target</span>
+                    <span class="prob-value" id="belowA">—</span>
+                </div>
+
+                <div class="prob-row">
+                    <span class="prob-label">Above target</span>
+                    <span class="prob-value" id="aboveA">—</span>
+                </div>
+
+                <div class="prob-row">
+                    <span class="prob-label">Total probability</span>
+                    <span class="prob-value" id="totalA">—</span>
+                </div>
+
+            </div>
+
+
+            <div class="probability-card">
+
+                <h3 id="probFundB">Fund B</h3>
+
+                <div class="target-title" id="targetTitleB">
+                    Target range probability
+                </div>
+
+                <div class="prob-row">
+                    <span class="prob-label">Target range</span>
+                    <span class="prob-value" id="rangeB">—</span>
+                </div>
+
+                <div class="prob-row">
+                    <span class="prob-label">Below target</span>
+                    <span class="prob-value" id="belowB">—</span>
+                </div>
+
+                <div class="prob-row">
+                    <span class="prob-label">Above target</span>
+                    <span class="prob-value" id="aboveB">—</span>
+                </div>
+
+                <div class="prob-row">
+                    <span class="prob-label">Total probability</span>
+                    <span class="prob-value" id="totalB">—</span>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================
+     METHODOLOGY
+========================= -->
+
+<section class="section">
+
+    <h2>Methodology</h2>
+
+    <div class="methodology">
+
+        <p>
+            The visualizer models annual returns as a normal distribution
+            using the entered mean return and standard deviation.
+        </p>
+
+        <div class="formula">
+            X ~ N(μ, σ²)
+        </div>
+
+        <p>
+            The probability density function is:
+        </p>
+
+        <div class="formula">
+            f(x) = 1 / (σ√2π) × e<sup>−½((x−μ)/σ)²</sup>
+        </div>
+
+        <p>
+            Under the normal-distribution assumption, approximately
+            <strong>68.27%</strong> of observations fall within ±1 SD
+            and approximately <strong>95.45%</strong> within ±2 SD.
+        </p>
+
+        <p>
+            Target probabilities are calculated using the cumulative
+            normal distribution between the specified minimum and maximum
+            return.
+        </p>
+
+        <p>
+            Actual investment returns may differ substantially from a
+            normal distribution. The calculated probabilities should
+            therefore be treated as a theoretical statistical model,
+            not as a forecast or guarantee.
+        </p>
+
+    </div>
+
+</section>
+
+
+<footer>
+    Risk–Return Distribution Visualizer
+</footer>
+
+</div>
+
+
+<script>
+
+/* =========================================================
+   NORMAL DISTRIBUTION FUNCTIONS
+========================================================= */
+
+function normalPDF(x, mean, sd) {
+
+    const coefficient =
+        1 / (sd * Math.sqrt(2 * Math.PI));
+
+    const exponent =
+        -0.5 * Math.pow((x - mean) / sd, 2);
+
+    return coefficient * Math.exp(exponent);
+}
+
+
+/*
+   Approximation of the standard normal CDF.
+*/
+function normalCDF(x) {
+
+    const sign = x < 0 ? -1 : 1;
+
+    x = Math.abs(x) / Math.sqrt(2);
+
+    const t = 1 / (1 + 0.3275911 * x);
+
+    const a1 = 0.254829592;
+    const a2 = -0.284496736;
+    const a3 = 1.421413741;
+    const a4 = -1.453152027;
+    const a5 = 1.061405429;
+
+    const erf =
+        1 -
+        (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1)
+        * t * Math.exp(-x * x);
+
+    return 0.5 * (1 + sign * erf);
+}
+
+
+function probabilityBetween(low, high, mean, sd) {
+
+    const zHigh = (high - mean) / sd;
+    const zLow = (low - mean) / sd;
+
+    return normalCDF(zHigh) - normalCDF(zLow);
+}
+
+
+function probabilityBelow(value, mean, sd) {
+
+    return normalCDF((value - mean) / sd);
+
+}
+
+
+function probabilityAbove(value, mean, sd) {
+
+    return 1 - normalCDF((value - mean) / sd);
+
+}
+
+
+/* =========================================================
+   FORMATTERS
+========================================================= */
+
+function formatPercent(value, decimals = 2) {
+
+    if (!Number.isFinite(value)) {
+        return "—";
+    }
+
+    return value.toFixed(decimals) + "%";
+
+}
+
+
+function formatRange(low, high) {
+
+    return formatPercent(low) + " – " + formatPercent(high);
+
+}
+
+
+function getNumber(id) {
+
+    const value = document.getElementById(id).value.trim();
+
+    if (value === "") {
+        return null;
+    }
+
+    const number = Number(value);
+
+    return Number.isFinite(number) ? number : null;
+
+}
+
+
+/* =========================================================
+   UPDATE CALCULATOR
+========================================================= */
+
+function update() {
+
+    const fundA =
+        document.getElementById("fundA").value.trim() || "Fund A";
+
+    const fundB =
+        document.getElementById("fundB").value.trim() || "Fund B";
+
+    const meanA = getNumber("meanA");
+    const sdA = getNumber("sdA");
+
+    const meanB = getNumber("meanB");
+    const sdB = getNumber("sdB");
+
+    const targetLow = getNumber("targetLow");
+    const targetHigh = getNumber("targetHigh");
+
+
+    document.getElementById("legendA").textContent = fundA;
+    document.getElementById("legendB").textContent = fundB;
+
+    document.getElementById("tableFundA").textContent = fundA;
+    document.getElementById("tableFundB").textContent = fundB;
+
+    document.getElementById("probFundA").textContent = fundA;
+    document.getElementById("probFundB").textContent = fundB;
+
+
+    /* Distribution analysis */
+
+    if (meanA !== null && sdA !== null && sdA > 0) {
+
+        const oneLowA = meanA - sdA;
+        const oneHighA = meanA + sdA;
+
+        const twoLowA = meanA - 2 * sdA;
+        const twoHighA = meanA + 2 * sdA;
+
+        document.getElementById("outMeanA").textContent =
+            formatPercent(meanA);
+
+        document.getElementById("outSDA").textContent =
+            formatPercent(sdA);
+
+        document.getElementById("out1A").textContent =
+            formatRange(oneLowA, oneHighA);
+
+        document.getElementById("out2A").textContent =
+            formatRange(twoLowA, twoHighA);
+
+    } else {
+
+        document.getElementById("outMeanA").textContent = "—";
+        document.getElementById("outSDA").textContent = "—";
+        document.getElementById("out1A").textContent = "—";
+        document.getElementById("out2A").textContent = "—";
+
+    }
+
+
+    if (meanB !== null && sdB !== null && sdB > 0) {
+
+        const oneLowB = meanB - sdB;
+        const oneHighB = meanB + sdB;
+
+        const twoLowB = meanB - 2 * sdB;
+        const twoHighB = meanB + 2 * sdB;
+
+        document.getElementById("outMeanB").textContent =
+            formatPercent(meanB);
+
+        document.getElementById("outSDB").textContent =
+            formatPercent(sdB);
+
+        document.getElementById("out1B").textContent =
+            formatRange(oneLowB, oneHighB);
+
+        document.getElementById("out2B").textContent =
+            formatRange(twoLowB, twoHighB);
+
+    } else {
+
+        document.getElementById("outMeanB").textContent = "—";
+        document.getElementById("outSDB").textContent = "—";
+        document.getElementById("out1B").textContent = "—";
+        document.getElementById("out2B").textContent = "—";
+
+    }
+
+
+    /* Target probability analysis */
+
+    const validTarget =
+        targetLow !== null &&
+        targetHigh !== null &&
+        targetHigh > targetLow;
+
+
+    if (validTarget) {
+
+        document.getElementById("targetLegend").style.display = "flex";
+
+        document.getElementById("targetLegendText").textContent =
+            "Target range: " +
+            formatPercent(targetLow) +
+            "–" +
+            formatPercent(targetHigh);
+
+
+        document.getElementById("targetTitleA").textContent =
+            "Target range probability (" +
+            formatPercent(targetLow) +
+            "–" +
+            formatPercent(targetHigh) +
+            ")";
+
+
+        document.getElementById("targetTitleB").textContent =
+            "Target range probability (" +
+            formatPercent(targetLow) +
+            "–" +
+            formatPercent(targetHigh) +
+            ")";
+
+
+        if (meanA !== null && sdA !== null && sdA > 0) {
+
+            const range =
+                probabilityBetween(
+                    targetLow,
+                    targetHigh,
+                    meanA,
+                    sdA
+                );
+
+            const below =
+                probabilityBelow(
+                    targetLow,
+                    meanA,
+                    sdA
+                );
+
+            const above =
+                probabilityAbove(
+                    targetHigh,
+                    meanA,
+                    sdA
+                );
+
+            document.getElementById("rangeA").textContent =
+                formatPercent(range * 100);
+
+            document.getElementById("belowA").textContent =
+                formatPercent(below * 100);
+
+            document.getElementById("aboveA").textContent =
+                formatPercent(above * 100);
+
+            document.getElementById("totalA").textContent =
+                formatPercent((range + below + above) * 100);
+
+        }
+
+
+        if (meanB !== null && sdB !== null && sdB > 0) {
+
+            const range =
+                probabilityBetween(
+                    targetLow,
+                    targetHigh,
+                    meanB,
+                    sdB
+                );
+
+            const below =
+                probabilityBelow(
+                    targetLow,
+                    meanB,
+                    sdB
+                );
+
+            const above =
+                probabilityAbove(
+                    targetHigh,
+                    meanB,
+                    sdB
+                );
+
+            document.getElementById("rangeB").textContent =
+                formatPercent(range * 100);
+
+            document.getElementById("belowB").textContent =
+                formatPercent(below * 100);
+
+            document.getElementById("aboveB").textContent =
+                formatPercent(above * 100);
+
+            document.getElementById("totalB").textContent =
+                formatPercent((range + below + above) * 100);
+
+        }
+
+    } else {
+
+        document.getElementById("targetLegend").style.display = "none";
+
+        document.getElementById("targetTitleA").textContent =
+            "Target range probability";
+
+        document.getElementById("targetTitleB").textContent =
+            "Target range probability";
+
+        [
+            "rangeA", "belowA", "aboveA", "totalA",
+            "rangeB", "belowB", "aboveB", "totalB"
+        ].forEach(id => {
+
+            document.getElementById(id).textContent = "—";
+
+        });
+
+    }
+
+
+    drawChart();
+
+}
+
+
+/* =========================================================
+   CHART
+========================================================= */
+
+function drawChart() {
+
+    const canvas =
+        document.getElementById("distributionChart");
+
+    const rect =
+        canvas.getBoundingClientRect();
+
+    const dpr =
+        window.devicePixelRatio || 1;
+
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+
+    const ctx = canvas.getContext("2d");
+
+    ctx.scale(dpr, dpr);
+
+
+    const width = rect.width;
+    const height = rect.height;
+
+
+    const meanA = getNumber("meanA");
+    const sdA = getNumber("sdA");
+
+    const meanB = getNumber("meanB");
+    const sdB = getNumber("sdB");
+
+    const targetLow = getNumber("targetLow");
+    const targetHigh = getNumber("targetHigh");
+
+
+    const validA =
+        meanA !== null &&
+        sdA !== null &&
+        sdA > 0;
+
+    const validB =
+        meanB !== null &&
+        sdB !== null &&
+        sdB > 0;
+
+
+    if (!validA && !validB) {
+
+        ctx.fillStyle = "#777";
+        ctx.font = "15px Arial";
+        ctx.textAlign = "center";
+
+        ctx.fillText(
+            "Enter valid mean and standard deviation values.",
+            width / 2,
+            height / 2
+        );
+
+        return;
+    }
+
+
+    /*
+       Fixed visual display range.
+
+       IMPORTANT:
+       This only controls what is shown on the graph.
+       It does NOT affect probability calculations.
+    */
+
+    const minX = -30;
+    const maxX = 50;
+
+
+    /* =====================================================
+       GRAPH DIMENSIONS
+    ===================================================== */
+
+    const left = 65;
+    const right = 25;
+    const top = 25;
+    const bottom = 55;
+
+    const graphWidth =
+        width - left - right;
+
+    const graphHeight =
+        height - top - bottom;
+
+
+    /* =====================================================
+       FIND MAX PDF
+    ===================================================== */
+
+    let maxPDF = 0;
+
+    for (let i = 0; i <= 500; i++) {
+
+        const x =
+            minX + (maxX - minX) * i / 500;
+
+        if (validA) {
+
+            maxPDF =
+                Math.max(
+                    maxPDF,
+                    normalPDF(x, meanA, sdA)
+                );
+
+        }
+
+        if (validB) {
+
+            maxPDF =
+                Math.max(
+                    maxPDF,
+                    normalPDF(x, meanB, sdB)
+                );
+
+        }
+
+    }
+
+
+    /*
+       If a distribution peaks outside the visible
+       range, still calculate its true peak so that
+       the visible portion retains the correct scale.
+    */
+
+    if (validA) {
+        maxPDF =
+            Math.max(
+                maxPDF,
+                normalPDF(meanA, meanA, sdA)
+            );
+    }
+
+    if (validB) {
+        maxPDF =
+            Math.max(
+                maxPDF,
+                normalPDF(meanB, meanB, sdB)
+            );
+    }
+
+
+    maxPDF *= 1.15;
+
+
+    function xPixel(x) {
+
+        return left +
+            (x - minX) /
+            (maxX - minX) *
+            graphWidth;
+
+    }
+
+
+    function yPixel(y) {
+
+        return top +
+            graphHeight -
+            (y / maxPDF) *
+            graphHeight;
+
+    }
+
+
+    /* =====================================================
+       BACKGROUND
+    ===================================================== */
+
+    ctx.clearRect(0, 0, width, height);
+
+
+    /* =====================================================
+       TARGET RANGE SHADE
+    ===================================================== */
+
+    if (
+        targetLow !== null &&
+        targetHigh !== null &&
+        targetHigh > targetLow
+    ) {
+
+        const x1 =
+            Math.max(left, xPixel(targetLow));
+
+        const x2 =
+            Math.min(
+                left + graphWidth,
+                xPixel(targetHigh)
+            );
+
+        if (x2 > x1) {
+
+            ctx.fillStyle =
+                "rgba(80,80,80,0.05)";
+
+            ctx.fillRect(
+                x1,
+                top,
+                x2 - x1,
+                graphHeight
+            );
+
+        }
+
+    }
+
+
+    /* =====================================================
+       GRID
+    ===================================================== */
+
+    ctx.strokeStyle = "#e8e8e8";
+    ctx.lineWidth = 1;
+
+    const gridLines = 5;
+
+    for (let i = 0; i <= gridLines; i++) {
+
+        const y =
+            top + graphHeight * i / gridLines;
+
+        ctx.beginPath();
+        ctx.moveTo(left, y);
+        ctx.lineTo(left + graphWidth, y);
+        ctx.stroke();
+
+    }
+
+
+    /* =====================================================
+       X AXIS
+    ===================================================== */
+
+    ctx.strokeStyle = "#999";
+    ctx.lineWidth = 1;
+
+    ctx.beginPath();
+    ctx.moveTo(left, top + graphHeight);
+    ctx.lineTo(left + graphWidth, top + graphHeight);
+    ctx.stroke();
+
+
+    /* =====================================================
+       X AXIS LABELS
+    ===================================================== */
+
+    ctx.fillStyle = "#555";
+    ctx.font = "12px Arial";
+    ctx.textAlign = "center";
+
+    const tickCount = 8;
+
+    for (let i = 0; i <= tickCount; i++) {
+
+        const value =
+            minX +
+            (maxX - minX) * i / tickCount;
+
+        const x = xPixel(value);
+
+        ctx.beginPath();
+        ctx.moveTo(x, top + graphHeight);
+        ctx.lineTo(x, top + graphHeight + 5);
+        ctx.stroke();
+
+        ctx.fillText(
+            value.toFixed(0) + "%",
+            x,
+            top + graphHeight + 20
+        );
+
+    }
+
+
+    /* =====================================================
+       Y AXIS
+    ===================================================== */
+
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#666";
+
+    for (let i = 0; i <= 4; i++) {
+
+        const value =
+            maxPDF * i / 4;
+
+        const y =
+            yPixel(value);
+
+        ctx.fillText(
+            value.toFixed(3),
+            left - 8,
+            y + 4
+        );
+
+    }
+
+
+    /* =====================================================
+       AXIS TITLES
+    ===================================================== */
+
+    ctx.textAlign = "center";
+    ctx.font = "13px Arial";
+    ctx.fillStyle = "#444";
+
+    ctx.fillText(
+        "Return (%)",
+        left + graphWidth / 2,
+        height - 10
+    );
+
+
+    ctx.save();
+
+    ctx.translate(
+        15,
+        top + graphHeight / 2
+    );
+
+    ctx.rotate(-Math.PI / 2);
+
+    ctx.fillText(
+        "Probability density",
+        0,
+        0
+    );
+
+    ctx.restore();
+
+
+    /* =====================================================
+       TARGET BOUNDARIES
+    ===================================================== */
+
+   
+
+
+    /* =====================================================
+       DRAW DISTRIBUTION
+    ===================================================== */
+
+    function drawDistribution(mean, sd, lineColor) {
+
+        ctx.beginPath();
+
+        const points = 700;
+
+        for (let i = 0; i <= points; i++) {
+
+            const x =
+                minX +
+                (maxX - minX) *
+                i / points;
+
+            const y =
+                normalPDF(x, mean, sd);
+
+            const px = xPixel(x);
+            const py = yPixel(y);
+
+            if (i === 0) {
+
+                ctx.moveTo(px, py);
+
+            } else {
+
+                ctx.lineTo(px, py);
+
+            }
+
+        }
+
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+    }
+
+
+    if (validA) {
+        drawDistribution(meanA, sdA, "#3b82f6");
+    }
+
+    if (validB) {
+        drawDistribution(meanB, sdB, "#d97706");
+    }
+
+
+    /* =====================================================
+       MEAN LINES
+    ===================================================== */
+
+    function drawMeanLine(mean, lineColor) {
+
+        if (mean < minX || mean > maxX) {
+            return;
+        }
+
+        const x = xPixel(mean);
+
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 4]);
+
+        ctx.beginPath();
+        ctx.moveTo(x, top);
+        ctx.lineTo(x, top + graphHeight);
+        ctx.stroke();
+
+        ctx.setLineDash([]);
+
+    }
+
+
+    if (validA) {
+        drawMeanLine(meanA, "#3b82f6");
+    }
+
+    if (validB) {
+        drawMeanLine(meanB, "#d97706");
+    }
+
+}
+
+
+/* =========================================================
+   EXAMPLE / CLEAR
+========================================================= */
+
+function loadExample() {
+
+    update();
+
+}
+
+
+function clearInputs() {
+
+    document.getElementById("fundA").value = "";
+    document.getElementById("meanA").value = "";
+    document.getElementById("sdA").value = "";
+
+    document.getElementById("fundB").value = "";
+    document.getElementById("meanB").value = "";
+    document.getElementById("sdB").value = "";
+
+    document.getElementById("targetLow").value = "";
+    document.getElementById("targetHigh").value = "";
+
+    update();
+
+}
+
+
+/* =========================================================
+   RESPONSIVE REDRAW
+========================================================= */
+
+window.addEventListener("resize", drawChart);
+
+
+/* INITIAL CALCULATION */
+
+update();
+
+</script>
+
+</body>
+</html>
